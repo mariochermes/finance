@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Sell
+{% endblock %}
+
+{% block main %}
+    <form action="/sell" method="POST">
+        <div class="mb-3">
+            <select class="d-inline-block form-select mx-auto w-auto" id="symbol_select" name="symbol">
+                    <option disabled selected>Symbol</option>
+                {% for stock in stocks %}
+                <option value="{{ stock['symbol'] }}">{{ stock["symbol"] }}</option>
+                {% endfor %}
+            </select>
+            <span class="p-3 fs-5" id="shares_msg"></span>
+        </div>
+        <div class="mb-3">
+            <input autocomplete="off" class="form-control mx-auto w-auto" id="shares" min="1" name="shares" placeholder="Shares" type="number">
+        </div>
+        <button class="btn btn-primary" type="submit">Sell</button>
+    </form>
+{% endblock %}
+
+{% block script %}
+<script>
+
+    document.addEventListener("DOMContentLoaded", function(){
+
+        const symbolSelect = document.querySelector("#symbol_select");
+        const sharesSpan = document.querySelector("#shares_msg");
+        const sharesInput = document.querySelector("#shares");
+
+        symbolSelect.addEventListener("change", () => {
+            const symbol = symbolSelect.value;
+            fetch(`/shares/${symbol}`)
+            .then(response => response.json())
+            .then(data => {
+                sharesSpan.textContent = `Shares: ${data.shares}`;
+                sharesInput.setAttribute("max", data.shares);
+            });
+        });
+    });
+
+</script>
+{% endblock %}

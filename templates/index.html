@@ -1,0 +1,118 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Portfolio
+{% endblock %}
+
+{% block main %}
+    <form action="/" method="POST" id="shares_form" hidden>
+        <div class="mb-3">
+            <input autocomplete="off" class="form-control mx-auto w-auto" id="shares" min="1" name="shares" placeholder="Shares" type="number">
+        </div>
+        <button class="btn btn-primary" id="shares_btn" type="submit"></button>
+    </form>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th class="text-start">Symbol</th>
+                <th class="text-start">Name</th>
+                <th class="text-end">Shares</th>
+                <th class="text-end">Price</th>
+                <th class="text-end">TOTAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stock in stocks %}
+                <tr>
+                    <td class="text-start symbol">{{ stock["symbol"] }}</td>
+                    <td class="text-start name">{{ stock["name"] }}</td>
+                    <td class="text-end total_shares">{{ stock["total_shares"] }}</td>
+                    <td class="text-end current_price">{{ stock["current_price"] | usd }}</td>
+                    <td class="text-end">{{ (stock["current_price"] * stock["total_shares"]) | usd }}</td>
+                    <td class="w-10">
+                        <button class="buy_button btn-primary">Buy</button>
+                        <button class="sell_button btn-primary">Sell</button>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td class="border-0 fw-bold text-end" colspan="4">Cash</td>
+                <td class="border-0 text-end">{{ cash | usd }}</td>
+            </tr>
+            <tr>
+                <td class="border-0 fw-bold text-end" colspan="4">TOTAL</td>
+                <td class="border-0 w-bold text-end">{{ total_sum | usd }}</td>
+            </tr>
+        </tfoot>
+    </table>
+{% endblock %}
+
+{% block script %}
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function() {
+
+            const buyButtons = document.querySelectorAll(".buy_button");
+            const sellButtons = document.querySelectorAll(".sell_button");
+            const sharesInput = document.querySelector("#shares");
+            const sharesForm = document.querySelector("#shares_form");
+            const sharesBtn = document.querySelector("#shares_btn");
+
+            let symbol = "";
+            let action = "";
+
+            function handleClick(button, transaction) {
+                sharesForm.setAttribute("class", transaction);
+                sharesForm.removeAttribute("hidden");
+
+                buyable_shares = "{{ cash }}" /  Math.round(button.closest("tr").querySelector(".current_price").innerHTML);
+                sellable_shares = button.closest("tr").querySelector(".total_shares").innerHTML;
+
+                const maxShares = (transaction === "buy") ? buyable_shares : sellable_shares;
+                sharesInput.setAttribute("max", maxShares);
+
+                sharesBtn.innerHTML = transaction.charAt(0).toUpperCase() + transaction.slice(1);
+
+                symbol = button.closest("tr").querySelector(".symbol").innerHTML;
+                action = sharesForm.className;
+            }
+
+            buyButtons.forEach(function(button) {
+                button.addEventListener("click", function() {
+                    handleClick(button, "buy");
+                });
+            });
+
+            sellButtons.forEach(function(button) {
+                button.addEventListener("click", function() {
+                    handleClick(button, "sell");
+                });
+            });
+
+            sharesForm.addEventListener("submit", function() {
+                event.preventDefault();
+
+                sharesBtn.disabled = true;
+
+                const formData = new FormData(sharesForm);
+
+                formData.append("action", action);
+                formData.append("symbol", symbol);
+
+                fetch(sharesForm.action, {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => {
+                    if (response.status === 200) {
+                        window.location.reload();
+                    }
+                })
+                .catch(error => console.error(error))
+            });
+        });
+
+    </script>
+{% endblock %}
